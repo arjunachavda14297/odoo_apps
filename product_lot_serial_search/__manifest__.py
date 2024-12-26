@@ -16,4 +16,5 @@
     "installable": True,
     "application": False,
     "auto_install": False,
+    "images": ['static/description/icon.png', 'static/description/screenshot1.png',],
 }
