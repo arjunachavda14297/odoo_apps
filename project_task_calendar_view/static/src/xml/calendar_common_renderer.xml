@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="project_task_calendar_view.TaskCalendarCommonRenderer.event" t-inherit="web.CalendarCommonRenderer.event"  t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_event_title')]" position="replace">
+            <t t-if="as_custom_calendar">
+                <b><div class="o_event_title text-truncate" t-out="title"/></b>
+            </t>
+            <t t-else="">
+                <div class="o_event_title text-truncate" t-out="title"/>
+            </t>
+        </xpath>
+        <xpath expr="//div[hasclass('fc-content')]" position="after">
+            <t t-if="as_custom_calendar">
+                <div class="fc-content" t-att-class="isMonth ? 'd-flex gap-1 text-truncate' : ''">
+                    <div class="o_event_title text-truncate" t-out="project_id"/>
+                </div>
+            </t>
+        </xpath>
+    </t>
+</templates>
