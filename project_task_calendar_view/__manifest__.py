@@ -21,5 +21,5 @@ This module customizes the Calendar View of the Project Task model by displaying
     'installable': True,
     'application': False,
     'auto_install': False,
-    "images": ['static/description/icon.png'],
+    "images": ['static/description/icon.png', 'static/description/screenshot1.png'],
 }
