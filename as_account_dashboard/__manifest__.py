@@ -1,5 +1,5 @@
 {
-    'name': 'AS Accounting Dashboard',
+    'name': 'Accounting Dashboard | Account | Account Dashboard | Dashboard | Dashboard Accounting | invoice | invoice Dashboard',
     'version': '20.0.1.0.0',
     'category': 'Accounting/Accounting',
     'summary': 'Role-aware accounting dashboard with KPIs, filters, aging and cash charts for the Enterprise Accounting app',
