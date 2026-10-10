@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_as_account_dashboard" model="ir.actions.client">
+        <field name="name">My Dashboard</field>
+        <field name="tag">as_account_dashboard</field>
+    </record>
+
+    <!-- 1) create the menu (the parent is set in step 2).
+            sequence 0 => first menu of the app => opens by default -->
+    <menuitem id="menu_as_account_dashboard"
+              name="My Dashboard"
+              action="action_as_account_dashboard"
+              sequence="0"
+              groups="account.group_account_invoice,account.group_account_readonly"/>
+
+    <!-- 2) move it inside the Enterprise Accounting app. The parent is resolved
+            in Python from the menus of account_accountant (no hard-coded id). -->
+    <function model="ir.ui.menu" name="_as_dashboard_place_menu"/>
+</odoo>

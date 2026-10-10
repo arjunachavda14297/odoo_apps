@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="as_account_dashboard.Dashboard">
+        <div class="o_as_acc_dashboard overflow-auto h-100">
+            <div class="o_dash_inner p-3 p-lg-4">
+
+                <!-- ============ Header ============ -->
+                <div class="o_dash_hero mb-3">
+                    <div>
+                        <h2 class="mb-2 o_dash_title">My Dashboard</h2>
+                        <div class="o_hero_sub">
+                            <span class="o_pill" t-out="this.periodLabel"/>
+                            <span t-if="this.state.filters.compare" class="o_pill">vs <t t-out="this.compareLabel"/></span>
+                            <span class="o_pill" t-out="(this.state.data.companies || []).join(', ')"/>
+                        </div>
+                    </div>
+                    <button class="btn btn-light btn-sm o_hero_btn" t-on-click="() => this.load()">Refresh</button>
+                </div>
+
+                <!-- ============ Filters ============ -->
+                <div class="o_dash_card o_filters mb-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-6 col-md-3 col-xl-2">
+                            <label class="o_flabel">Period</label>
+                            <select class="form-select form-select-sm"
+                                    t-on-change="(ev) => this.setFilter('period', ev.target.value)">
+                                <option t-foreach="this.periods" t-as="p" t-key="p.value"
+                                        t-att-value="p.value"
+                                        t-att-selected="this.state.filters.period === p.value"
+                                        t-out="p.label"/>
+                            </select>
+                        </div>
+                        <t t-if="this.state.filters.period === 'custom'">
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <label class="o_flabel">From</label>
+                                <input type="date" class="form-control form-control-sm"
+                                       t-att-value="this.state.filters.date_from"
+                                       t-on-change="(ev) => this.setFilter('date_from', ev.target.value)"/>
+                            </div>
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <label class="o_flabel">To</label>
+                                <input type="date" class="form-control form-control-sm"
+                                       t-att-value="this.state.filters.date_to"
+                                       t-on-change="(ev) => this.setFilter('date_to', ev.target.value)"/>
+                            </div>
+                        </t>
+                        <div class="col-6 col-md-3 col-xl-2">
+                            <label class="o_flabel">Journal</label>
+                            <select class="form-select form-select-sm"
+                                    t-on-change="(ev) => this.setFilter('journal_id', ev.target.value)">
+                                <option value="">All journals</option>
+                                <option t-foreach="(this.state.data.options || {}).journals || []" t-as="j" t-key="j.id"
+                                        t-att-value="j.id"
+                                        t-att-selected="this.state.filters.journal_id === j.id"
+                                        t-out="j.name"/>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3 col-xl-2">
+                            <label class="o_flabel">Salesperson (customer side)</label>
+                            <select class="form-select form-select-sm"
+                                    t-on-change="(ev) => this.setFilter('user_id', ev.target.value)">
+                                <option value="">Everyone</option>
+                                <option t-foreach="(this.state.data.options || {}).users || []" t-as="u" t-key="u.id"
+                                        t-att-value="u.id"
+                                        t-att-selected="this.state.filters.user_id === u.id"
+                                        t-out="u.name"/>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3 col-xl-2">
+                            <div class="form-check form-switch mb-1">
+                                <input class="form-check-input" type="checkbox" id="o_dash_compare"
+                                       t-att-checked="this.state.filters.compare"
+                                       t-on-change="(ev) => this.setFilter('compare', ev.target.checked)"/>
+                                <label class="form-check-label small" for="o_dash_compare">Compare with previous</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div t-if="this.state.data.mixed_currencies" class="small text-info mt-2">
+                        Selected companies use different currencies. Amounts are converted to
+                        <b t-out="this.state.data.currency_name"/>.
+                    </div>
+                </div>
+
+                <div t-attf-class="o_dash_body #{this.state.loading ? 'o_dash_loading' : ''}">
+
+                    <!-- ============ KPI cards ============ -->
+                    <div class="row g-3 mb-3">
+                        <t t-foreach="this.state.data.kpis || []" t-as="kpi" t-key="kpi.key">
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div t-attf-class="o_dash_card o_kpi o_kpi_#{kpi.tone} #{kpi.domain ? 'o_clickable' : ''}"
+                                     t-on-click="() => this.openRecords(kpi)">
+                                    <div class="o_kpi_label"><span class="o_kpi_dot"/> <t t-out="kpi.label"/></div>
+                                    <div class="d-flex align-items-end justify-content-between gap-2">
+                                        <div>
+                                            <div class="o_kpi_value" t-out="this.kpiValue(kpi)"/>
+                                            <div class="o_kpi_foot">
+                                                <span t-if="kpi.has_delta"
+                                                      t-attf-class="o_delta #{kpi.delta_good ? 'o_good' : 'o_bad'}"
+                                                      t-out="this.deltaText(kpi)"/>
+                                            </div>
+                                        </div>
+                                        <svg t-if="this.spark(kpi.key)" class="o_spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+                                            <polyline fill="none" t-att-points="this.spark(kpi.key)"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- ============ Trend + Attention ============ -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-xl-8">
+                            <div class="o_dash_card h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="o_card_title mb-0">Income vs Expenses · last 12 months</h5>
+                                    <small class="text-muted">
+                                        <span class="o_legend o_bg_success"/> Income
+                                        <span class="o_legend o_bg_warning ms-2"/> Expenses
+                                        <span class="o_legend o_bg_primary ms-2"/> Net
+                                    </small>
+                                </div>
+                                <t t-set="trend" t-value="this.trend"/>
+                                <svg class="o_trend_svg" t-att-viewBox="trend.viewBox" preserveAspectRatio="xMidYMid meet">
+                                    <t t-foreach="trend.ticks" t-as="tk" t-key="tk_index">
+                                        <line class="o_grid" t-att-x1="trend.left" t-att-x2="trend.right" t-att-y1="tk.y" t-att-y2="tk.y"/>
+                                        <text class="o_axis" text-anchor="end" t-att-x="trend.left - 6" t-att-y="tk.y + 3" t-out="tk.label"/>
+                                    </t>
+                                    <line class="o_zero" t-att-x1="trend.left" t-att-x2="trend.right" t-att-y1="trend.zero" t-att-y2="trend.zero"/>
+                                    <t t-foreach="trend.bars" t-as="b" t-key="b_index">
+                                        <rect class="o_svg_income" rx="2" t-att-x="b.xi" t-att-y="b.yi" t-att-width="b.w" t-att-height="b.hInc">
+                                            <title t-out="b.title"/>
+                                        </rect>
+                                        <rect class="o_svg_expense" rx="2" t-att-x="b.xe" t-att-y="b.ye" t-att-width="b.w" t-att-height="b.hExp">
+                                            <title t-out="b.title"/>
+                                        </rect>
+                                        <text class="o_axis" text-anchor="middle" t-att-x="b.cx" t-att-y="trend.labelY" t-out="b.label"/>
+                                    </t>
+                                    <polyline class="o_svg_net" fill="none" t-att-points="trend.line"/>
+                                    <t t-foreach="trend.bars" t-as="b" t-key="b_index">
+                                        <circle class="o_svg_dot" r="3" t-att-cx="b.cx" t-att-cy="b.ny">
+                                            <title t-out="b.title"/>
+                                        </circle>
+                                    </t>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-xl-4">
+                            <div class="o_dash_card h-100">
+                                <h5 class="o_card_title">Needs attention</h5>
+                                <t t-foreach="this.state.data.attention || []" t-as="item" t-key="item.key">
+                                    <div class="o_attn_row o_clickable" t-on-click="() => this.openRecords(item)">
+                                        <span t-out="item.label"/>
+                                        <span t-attf-class="badge rounded-pill text-bg-#{item.count ? item.tone : 'light'}" t-out="'' + item.count"/>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============ Payment status + Aging ============ -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-lg-4">
+                            <div class="o_dash_card h-100">
+                                <h5 class="o_card_title">Customer invoices · payment status</h5>
+                                <t t-set="donut" t-value="this.donut"/>
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <div class="o_donut_wrap">
+                                        <svg viewBox="0 0 42 42" class="o_donut">
+                                            <circle class="o_donut_ring" cx="21" cy="21" r="15.9155" fill="transparent" stroke-width="5"/>
+                                            <t t-foreach="donut.arcs" t-as="a" t-key="a.key">
+                                                <circle t-attf-class="o_seg o_seg_#{a.tone}" cx="21" cy="21" r="15.9155" fill="transparent"
+                                                        stroke-width="5" t-att-stroke-dasharray="a.dash" t-att-stroke-dashoffset="a.offset"/>
+                                            </t>
+                                        </svg>
+                                        <div class="o_donut_center">
+                                            <div class="small text-muted">Invoiced</div>
+                                            <div class="fw-bold" t-out="this.compact(donut.total)"/>
+                                        </div>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <t t-foreach="donut.arcs" t-as="a" t-key="a.key">
+                                            <div class="o_legend_row o_clickable" t-on-click="() => this.openRecords(a)">
+                                                <span t-attf-class="o_legend o_bg_#{a.tone}"/>
+                                                <span class="flex-fill" t-out="a.label"/>
+                                                <span class="fw-semibold" t-out="a.pct + '%'"/>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="o_dash_card h-100">
+                                <h5 class="o_card_title">Aged receivable</h5>
+                                <t t-foreach="this.state.data.aging_receivable || []" t-as="b" t-key="b.key">
+                                    <div class="o_hbar_row o_clickable" t-on-click="() => this.openRecords({label: 'Receivable ' + b.label, domain: b.domain})">
+                                        <div class="o_hbar_head">
+                                            <span t-out="b.label"/>
+                                            <span class="fw-semibold" t-out="this.money(b.value)"/>
+                                        </div>
+                                        <div class="o_hbar_track"><div t-attf-class="o_hbar_fill o_bg_#{b.tone}" t-attf-style="width: #{b.pct}%;"/></div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="o_dash_card h-100">
+                                <h5 class="o_card_title">Aged payable</h5>
+                                <t t-foreach="this.state.data.aging_payable || []" t-as="b" t-key="b.key">
+                                    <div class="o_hbar_row o_clickable" t-on-click="() => this.openRecords({label: 'Payable ' + b.label, domain: b.domain})">
+                                        <div class="o_hbar_head">
+                                            <span t-out="b.label"/>
+                                            <span class="fw-semibold" t-out="this.money(b.value)"/>
+                                        </div>
+                                        <div class="o_hbar_track"><div t-attf-class="o_hbar_fill o_bg_#{b.tone}" t-attf-style="width: #{b.pct}%;"/></div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============ Top lists ============ -->
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-4">
+                            <div class="o_dash_card h-100">
+                                <h5 class="o_card_title">Top customers · outstanding</h5>
+                                <div t-if="!(this.state.data.top_customers || []).length" class="text-muted small">Nothing outstanding.</div>
+                                <t t-foreach="this.state.data.top_customers || []" t-as="c" t-key="c.id">
+                                    <div class="o_hbar_row o_clickable" t-on-click="() => this.openRecords({label: c.name, domain: c.domain})">
+                                        <div class="o_hbar_head">
+                                            <span class="text-truncate" t-out="c.name"/>
+                                            <span class="fw-semibold" t-out="this.money(c.value)"/>
+                                        </div>
+                                        <div class="o_hbar_track"><div class="o_hbar_fill o_bg_primary" t-attf-style="width: #{c.pct}%;"/></div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-4">
+                            <div class="o_dash_card h-100">
+                                <h5 class="o_card_title">Top vendors · payable</h5>
+                                <div t-if="!(this.state.data.top_vendors || []).length" class="text-muted small">Nothing to pay.</div>
+                                <t t-foreach="this.state.data.top_vendors || []" t-as="c" t-key="c.id">
+                                    <div class="o_hbar_row o_clickable" t-on-click="() => this.openRecords({label: c.name, domain: c.domain})">
+                                        <div class="o_hbar_head">
+                                            <span class="text-truncate" t-out="c.name"/>
+                                            <span class="fw-semibold" t-out="this.money(c.value)"/>
+                                        </div>
+                                        <div class="o_hbar_track"><div class="o_hbar_fill o_bg_orange" t-attf-style="width: #{c.pct}%;"/></div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <div t-if="this.state.data.show_cash" class="col-12 col-lg-4">
+                            <div class="o_dash_card h-100">
+                                <h5 class="o_card_title">Cash &amp; Bank by journal</h5>
+                                <div t-if="!(this.state.data.cash || []).length" class="text-muted small">No bank or cash journal.</div>
+                                <div t-if="(this.state.data.cash || []).length" class="small text-muted mb-1">Click a journal to see its balance trend.</div>
+                                <t t-foreach="this.state.data.cash || []" t-as="c" t-key="c_index">
+                                    <div class="o_hbar_row o_clickable" t-on-click="() => this.openCash(c)">
+                                        <div class="o_hbar_head">
+                                            <span class="text-truncate" t-out="c.name"/>
+                                            <span class="fw-semibold" t-out="this.money(c.value)"/>
+                                        </div>
+                                        <div class="o_hbar_track"><div class="o_hbar_fill o_bg_info" t-attf-style="width: #{c.pct}%;"/></div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ============ Cash journal detail (Manager only) ============ -->
+            <div t-if="this.state.cashDetail" class="o_cash_overlay" t-on-click="(ev) => this.onOverlayClick(ev)">
+                <div class="o_dash_card o_cash_modal">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="o_card_title mb-1"><t t-out="this.state.cashDetail.name"/> · balance trend</h5>
+                            <div class="small text-muted">Month-end balance, last 12 months</div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.closeCash()">Close</button>
+                    </div>
+                    <t t-if="this.state.cashDetail.loading">
+                        <div class="text-muted py-5 text-center">Loading...</div>
+                    </t>
+                    <t t-else="">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6 col-md-3"><div class="o_cash_stat"><div class="o_stat_label">Current</div><div class="o_stat_value" t-out="this.money(this.state.cashDetail.current)"/></div></div>
+                            <div class="col-6 col-md-3"><div class="o_cash_stat"><div class="o_stat_label">Highest</div><div class="o_stat_value" t-out="this.money(this.state.cashDetail.highest)"/></div></div>
+                            <div class="col-6 col-md-3"><div class="o_cash_stat"><div class="o_stat_label">Lowest</div><div class="o_stat_value" t-out="this.money(this.state.cashDetail.lowest)"/></div></div>
+                            <div class="col-6 col-md-3"><div class="o_cash_stat"><div class="o_stat_label">12-month change</div><div class="o_stat_value" t-out="this.money(this.state.cashDetail.change)"/></div></div>
+                        </div>
+                        <t t-set="cc" t-value="this.cashChart"/>
+                        <svg class="o_trend_svg" t-att-viewBox="cc.viewBox" preserveAspectRatio="xMidYMid meet">
+                            <t t-foreach="cc.ticks" t-as="tk" t-key="tk_index">
+                                <line class="o_grid" t-att-x1="cc.left" t-att-x2="cc.right" t-att-y1="tk.y" t-att-y2="tk.y"/>
+                                <text class="o_axis" text-anchor="end" t-att-x="cc.left - 6" t-att-y="tk.y + 3" t-out="tk.label"/>
+                            </t>
+                            <line class="o_zero" t-att-x1="cc.left" t-att-x2="cc.right" t-att-y1="cc.zero" t-att-y2="cc.zero"/>
+                            <polygon class="o_cash_area" t-att-points="cc.area"/>
+                            <polyline class="o_cash_line" fill="none" t-att-points="cc.line"/>
+                            <t t-foreach="cc.pts" t-as="q" t-key="q_index">
+                                <text class="o_axis" text-anchor="middle" t-att-x="q.x" t-att-y="cc.labelY" t-out="q.label"/>
+                                <circle class="o_cash_dot" r="3.5" t-att-cx="q.x" t-att-cy="q.y"><title t-out="q.title"/></circle>
+                            </t>
+                        </svg>
+                        <div class="text-end mt-3">
+                            <button class="btn btn-primary btn-sm" t-on-click="() => this.openCashEntries()">Open journal items</button>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

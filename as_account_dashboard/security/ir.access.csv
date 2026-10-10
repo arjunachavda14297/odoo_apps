@@ -1,0 +1,3 @@
+id,name,model_id,group_id/id,operation,domain
+access_as_account_dashboard_billing,as.account.dashboard billing,as.account.dashboard,account.group_account_invoice,r,
+access_as_account_dashboard_readonly,as.account.dashboard readonly,as.account.dashboard,account.group_account_readonly,r,
